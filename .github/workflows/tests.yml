@@ -14,3 +14,6 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m unittest discover -s tests -v
+
+      - name: Check live free data source on GitHub runner
+        run: python scripts/probe_sources.py
