@@ -9,6 +9,8 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.request import Request, urlopen
+from urllib.parse import quote
+from datetime import datetime
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "docs" / "data"
@@ -21,6 +23,43 @@ def universe():
         if value and not value.startswith("#") and value not in result:
             result.append(value)
     return result
+
+
+def download_yahoo(symbol):
+    """Yahoo chart endpoint, unofficial/no key, subject to throttling and change."""
+    url = ("https://query1.finance.yahoo.com/v8/finance/chart/"
+           + quote(symbol, safe="") + "?range=2y&interval=1d")
+    request = Request(url, headers={"User-Agent": "stock-radar-personal-research/0.1",
+                                    "Accept": "application/json"})
+    with urlopen(request, timeout=20) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+    results = payload.get("chart", {}).get("result") or []
+    if not results:
+        raise ValueError("Yahoo chart returned no results")
+    record = results[0]
+    timestamps = record.get("timestamp") or []
+    quotes = record.get("indicators", {}).get("quote") or []
+    if not quotes:
+        raise ValueError("Missing Yahoo quote bars")
+    data = quotes[0]
+    closes = data.get("close") or []
+    volumes = data.get("volume") or []
+    rows = []
+    for ts, close, volume in zip(timestamps, closes, volumes):
+        try:
+            price = float(close)
+            vol = float(volume)
+            if not (price > 0 and vol >= 0 and math.isfinite(price) and math.isfinite(vol)):
+                continue
+            day = datetime.fromtimestamp(int(ts), timezone.utc).strftime("%Y-%m-%d")
+            rows.append({"date": day, "close": price, "volume": vol})
+        except (ValueError, TypeError, OverflowError, OSError):
+            continue
+    rows.sort(key=lambda r: r["date"])
+    rows = [r for i, r in enumerate(rows) if i == 0 or r["date"] != rows[i - 1]["date"]]
+    if len(rows) < 210:
+        raise ValueError("Yahoo provided fewer than 210 usable trading days")
+    return rows[-270:]
 
 
 def download(symbol):
@@ -112,9 +151,21 @@ def main():
     old = load_json(OUT / "latest.json", {})
     previous = {row["ticker"]: row for row in old.get("stocks", [])}
     results, failures = [], {}
+    provider_counts = {"Yahoo": 0, "Stooq": 0}
     for ticker in symbols:
         try:
-            result = analyze(ticker, download(ticker))
+            try:
+                bars = download_yahoo(ticker)
+                provider = "Yahoo"
+            except Exception as yahoo_error:
+                try:
+                    bars = download(ticker)
+                    provider = "Stooq"
+                except Exception as stooq_error:
+                    raise ValueError("Yahoo: %s; Stooq: %s" % (yahoo_error, stooq_error))
+            result = analyze(ticker, bars)
+            result["provider"] = provider
+            provider_counts[provider] += 1
             prev = previous.get(ticker)
             result["score_change"] = round(result["score"] - prev["score"], 1) if prev else None
             results.append(result)
@@ -132,7 +183,8 @@ def main():
     market_date = max(r["date"] for r in results)
     latest = {
         "generated_at": now, "latest_market_date": market_date,
-        "source": "Stooq daily historical CSV (unofficial, may be delayed/adjusted)",
+        "source": "Yahoo chart / Stooq daily CSV (unofficial; delayed/unadjusted/limited)",
+        "providers": provider_counts,
         "universe_size": len(symbols), "scanned": len(results),
         "errors": failures, "stocks": results,
         "disclaimer": "Technical screening only. Scores are not forecasts or buy recommendations.",
