@@ -8,9 +8,9 @@ from scanner import analyze, percentage
 
 class ScannerTests(unittest.TestCase):
     @staticmethod
-    def bars(slope=0.1, spike=4):
+    def bars(growth=1.012, spike=4):
         return [
-            {"date": "2025-%03d" % i, "close": 10 + slope * i,
+            {"date": "2025-%03d" % i, "close": 10 * growth ** i,
              "volume": 1000 * (spike if i == 229 else 1)}
             for i in range(230)
         ]
@@ -23,7 +23,7 @@ class ScannerTests(unittest.TestCase):
         self.assertTrue(0 <= result["score"] <= 100)
 
     def test_flat_market_is_not_breakout(self):
-        result = analyze("DEMO", self.bars(0, 1))
+        result = analyze("DEMO", self.bars(1, 1))
         self.assertEqual(result["return_1m"], 0)
         self.assertEqual(result["signal"], "Monitor")
 
