@@ -1,0 +1,33 @@
+name: Daily market scan
+on:
+  schedule:
+    # 23:30 UTC weekdays, after US market close throughout the year.
+    - cron: '30 23 * * 1-5'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: stock-radar-daily
+  cancel-in-progress: false
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify scanner
+        run: python -m unittest discover -s tests -v
+      - name: Download and score
+        run: python scripts/scanner.py
+      - name: Commit public daily datasets
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/data/latest.json docs/data/snapshots.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'data: update daily radar'
+            git push
+          fi

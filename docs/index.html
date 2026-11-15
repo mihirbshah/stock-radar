@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0c1324">
+<title>Stock Radar · Momentum Intelligence</title>
+<style>
+:root{color-scheme:dark;--bg:#0c1324;--panel:#141f34;--line:#2b3b55;--text:#e6edf8;--muted:#9eb0ca;--green:#49d2a0;--red:#fd8593;--blue:#a5c4ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}header{padding:24px max(20px,calc((100vw - 1240px)/2));display:flex;justify-content:space-between;gap:12px;align-items:center;border-bottom:1px solid var(--line)}
+h1{font-size:23px;margin:0}h2{margin:0 0 12px;font-size:16px}p{line-height:1.65}.muted,small{color:var(--muted)}.pill{border:1px solid var(--line);padding:7px 11px;border-radius:99px;color:var(--muted);font-size:12px}
+main{max-width:1280px;margin:auto;padding:24px 20px}.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}.num{font-weight:750;font-size:29px;margin-top:7px}.columns{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(300px,1fr);gap:16px}
+nav{display:flex;gap:10px;margin:20px 0}button,select,input{font:inherit;color:var(--text);background:#0b172b;border:1px solid #40516b;border-radius:9px;padding:9px}button{cursor:pointer}button.active{background:#233b5d}input{flex:1;min-width:110px}.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}table{width:100%;border-collapse:collapse;text-align:left}th,td{padding:11px 9px;border-bottom:1px solid var(--line);white-space:nowrap}th{font-size:11px;color:var(--muted);font-weight:600}tbody tr{cursor:pointer}tbody tr:hover{background:#20314e}.scroll{overflow-x:auto}.green{color:var(--green)}.red{color:var(--red)}.blue{color:var(--blue)}.hidden{display:none}.chart{width:100%;height:auto;display:block;margin-top:16px}.twocol{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}.twocol div{background:#0b172b;border-radius:9px;padding:10px}.twocol b{display:block;font-size:19px;margin-top:5px}.tag{font-size:12px;color:var(--blue);margin:10px 0}.note{font-size:12px;color:var(--muted)}.empty{padding:28px;text-align:center;color:var(--muted)}footer{margin-top:24px;color:var(--muted);font-size:12px;line-height:1.7}.alert{margin-bottom:16px;padding:12px 16px;border:1px solid #856b38;background:#302916;border-radius:10px;color:#f4dbaa}
+@media(max-width:820px){header{padding:16px}main{padding:16px 12px}.metrics{grid-template-columns:repeat(2,1fr)}.columns{grid-template-columns:1fr}.panel{padding:14px}.num{font-size:24px}}
+</style>
+</head>
+<body>
+<header><div><h1>◈ Stock Radar</h1><div class="muted">Free end-of-day momentum intelligence</div></div><div class="pill" id="status">Loading…</div></header>
+<main>
+<div id="warning" class="alert hidden"></div>
+<div class="metrics"><div class="panel"><div class="muted">Stocks scanned</div><div class="num" id="count">—</div></div><div class="panel"><div class="muted">Breakout candidates</div><div class="num" id="breakouts">—</div></div><div class="panel"><div class="muted">High score ≥70</div><div class="num" id="strong">—</div></div><div class="panel"><div class="muted">Ticker failures</div><div class="num" id="failures">—</div></div></div>
+<nav><button class="tab active" data-target="radar">Opportunities</button><button class="tab" data-target="history">Scan history</button><button class="tab" data-target="about">Methodology</button></nav>
+<div id="radar" class="columns"><section class="panel"><h2>Ranked stock candidates</h2><div class="filters"><input id="search" aria-label="Search ticker" placeholder="Search ticker…"><select id="filter" aria-label="Filter candidates"><option value="all">All stocks</option><option value="breakout">Breakouts only</option><option value="early">Not extended</option></select><select id="sort" aria-label="Sort"><option value="score">Highest score</option><option value="return_1m">1M performance</option><option value="return_3m">3M performance</option><option value="relative_volume">Relative volume</option></select></div><div class="scroll"><table><thead><tr><th>Ticker</th><th>Score</th><th>1M</th><th>3M</th><th>Rel. Vol.</th><th>Status</th></tr></thead><tbody id="rows"><tr><td colspan="6">Awaiting scan data…</td></tr></tbody></table></div></section>
+<section class="panel"><h2>Stock deep dive</h2><div id="details" class="empty">Select a ticker to view its price trend and technical signals.</div></section></div>
+<section id="history" class="panel hidden"><h2>Historical scan leaders</h2><div id="historyRows" class="muted">No history loaded.</div></section>
+<section id="about" class="panel hidden"><h2>About these signals</h2><p>Breakout candidates have a 1-month return above 15%, a 3-month return above 30%, latest daily volume greater than 1.5 times the previous 20 sessions' average, and a price above both the 50-day and 200-day moving averages.</p><p>The 0–100 score combines momentum, volume and trend strength. A 3-month gain above 100% is flagged as <strong>extended</strong>. These scores are not future-return probabilities, buy recommendations or financial advice.</p><p>This free version scans only the symbols in the repository's <code>tickers.txt</code>, not the full US stock market. It does not yet analyze earnings, news, analyst estimates, market capitalization, institutional activity, or Reddit sentiment. Free Stooq data may be delayed, unavailable or adjusted.</p><p>Open-source project: <a class="blue" href="https://github.com/mihirbshah/stock-radar">GitHub stock-radar</a>.</p></section>
+<footer><div id="updated">No market scan has been published yet.</div><div>For research only. Independently verify market data before investment decisions. No brokerage connection or paid services.</div></footer>
+</main>
+<script>
+let state=null,selected=null;
+const el=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const number=(x,d=1)=>x==null?'—':Number(x).toFixed(d);
+const signed=x=>x==null?'':x>0?'green':x<0?'red':'';
+function spark(points){
+  if(!points||points.length<2)return '<p class="muted">No chart available</p>';
+  const width=500,height=180,pad=12,values=points.map(x=>Number(x.close)),low=Math.min(...values),high=Math.max(...values),span=high-low||1;
+  const path=values.map((v,i)=>(pad+i*(width-2*pad)/(values.length-1)).toFixed(1)+','+(height-pad-(v-low)*(height-2*pad)/span).toFixed(1)).join(' ');
+  return '<svg class="chart" viewBox="0 0 500 180" role="img" aria-label="Historical price line"><polyline points="'+path+'" fill="none" stroke="#49d2a0" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><div class="muted" style="display:flex;justify-content:space-between;font-size:11px"><span>'+esc(points[0].date)+'</span><span>'+esc(points[points.length-1].date)+'</span></div>';
+}
+function selectTicker(ticker){
+  const s=state.stocks.find(x=>x.ticker===ticker);if(!s)return;
+  selected=ticker;
+  const metric=(label,value,cls='')=>'<div><small>'+label+'</small><b class="'+cls+'">'+value+'</b></div>';
+  el('details').className='';
+  el('details').innerHTML='<div style="display:flex;justify-content:space-between;gap:10px"><div><h2 style="font-size:25px">'+esc(s.ticker)+'</h2><small>End-of-day '+esc(s.date)+'</small></div><div style="text-align:right"><b style="font-size:24px">$'+number(s.price,2)+'</b><br><span class="green">'+number(s.score)+'/100</span></div></div>'+spark(s.history)+'<div class="twocol">'+metric('1-month return',number(s.return_1m)+'%',signed(s.return_1m))+metric('3-month return',number(s.return_3m)+'%',signed(s.return_3m))+metric('Relative volume',number(s.relative_volume)+'×')+metric('Score change',number(s.score_change),signed(s.score_change))+metric('Above 50-day MA',s.above_50d?'Yes':'No')+metric('Above 200-day MA',s.above_200d?'Yes':'No')+'</div><p class="tag">'+esc(s.signal)+(s.extended?' · Extended (>100% over 3M)':'')+'</p><p class="note">Technical screening only. This is not an investment recommendation.</p>';
+}
+function render(){
+  if(!state)return;
+  let list=state.stocks.filter(s=>s.ticker.includes(el('search').value.trim().toUpperCase()));
+  if(el('filter').value==='breakout')list=list.filter(s=>s.signal==='Breakout candidate');
+  if(el('filter').value==='early')list=list.filter(s=>!s.extended);
+  list.sort((a,b)=>(b[el('sort').value]??-1e9)-(a[el('sort').value]??-1e9));
+  el('rows').innerHTML=list.map(s=>'<tr data-ticker="'+esc(s.ticker)+'"><td><b>'+esc(s.ticker)+'</b></td><td class="green">'+number(s.score)+'</td><td class="'+signed(s.return_1m)+'">'+number(s.return_1m)+'%</td><td class="'+signed(s.return_3m)+'">'+number(s.return_3m)+'%</td><td>'+number(s.relative_volume)+'×</td><td class="blue">'+(s.signal==='Breakout candidate'?'Breakout':'Monitor')+(s.extended?' ⚠':'')+'</td></tr>').join('')||'<tr><td colspan="6">No matching candidates.</td></tr>';
+  document.querySelectorAll('[data-ticker]').forEach(row=>row.addEventListener('click',()=>selectTicker(row.dataset.ticker)));
+  if(list.length&&!state.stocks.some(s=>s.ticker===selected))selectTicker(list[0].ticker);
+}
+async function load(){
+  try{
+    const response=await fetch('./data/latest.json?v='+Date.now(),{cache:'no-store'});
+    if(!response.ok)throw new Error('No published scan data yet');
+    const data=await response.json();
+    if(!Array.isArray(data.stocks)||!data.generated_at)throw new Error('Invalid scan data');
+    state=data;
+    el('count').textContent=data.scanned+'/'+data.universe_size;
+    el('breakouts').textContent=data.stocks.filter(s=>s.signal==='Breakout candidate').length;
+    el('strong').textContent=data.stocks.filter(s=>s.score>=70).length;
+    el('failures').textContent=Object.keys(data.errors||{}).length;
+    el('status').textContent='Market date: '+(data.latest_market_date||data.stocks[0]?.date||'—');
+    el('updated').textContent='Last scan: '+new Date(data.generated_at).toLocaleString()+' · '+data.source;
+    if(Object.keys(data.errors||{}).length){el('warning').classList.remove('hidden');el('warning').textContent=Object.keys(data.errors).length+' ticker(s) failed to load. Rankings cover only successfully scanned symbols.'}
+    render();
+  }catch(e){
+    el('status').textContent='Awaiting first scan';
+    el('rows').innerHTML='<tr><td colspan="6">No scan data yet. Run the Daily market scan GitHub Action on the main branch.</td></tr>';
+    el('updated').textContent=String(e.message);
+  }
+  try{
+    const response=await fetch('./data/snapshots.json?v='+Date.now(),{cache:'no-store'});
+    if(!response.ok)throw new Error('No history');
+    const snapshots=await response.json();
+    el('historyRows').innerHTML=snapshots.slice().reverse().slice(0,30).map(s=>'<p><b>'+esc(s.date)+'</b> · '+Number(s.scanned)+' scanned · Leaders: '+(s.top||[]).slice(0,5).map(t=>esc(t.ticker)+' ('+number(t.score)+')').join(', ')+'</p>').join('')||'No history yet.';
+  }catch(e){el('historyRows').textContent='No scan history yet.'}
+}
+['search','filter','sort'].forEach(id=>el(id).addEventListener(id==='search'?'input':'change',render));
+document.querySelectorAll('.tab').forEach(button=>button.addEventListener('click',()=>{
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b===button));
+  for(const id of ['radar','history','about'])el(id).classList.toggle('hidden',id!==button.dataset.target);
+}));
+load();
+</script>
+</body>
+</html>
